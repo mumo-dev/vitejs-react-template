@@ -81,7 +81,7 @@ function Todo({ item }) {
     <li className={`list-group-item d-flex justify-content-between align-items-center`}
       onDoubleClick={handleToggle}
     >
-      <span className={`${item.done ? "text-decoration-line-through": ""}`}>  {item.text} </span>
+      <span className={`${item.done ? "text-decoration-line-through" : ""}`}>  {item.text} </span>
       <span
         className="badge bg-danger rounded-pill"
         style={{ cursor: 'pointer' }}
@@ -94,8 +94,24 @@ function Todo({ item }) {
 
 }
 
-function ListTodo({ todos }) {
-  let allTodos = todos.map(todo => (
+function ListTodo() {
+  const { data, loading, error } = useQuery(FETCH_TODOS)
+
+  if (error) {
+    return (
+      <div className="alert alert-danger" role="alert">
+        An error occurred
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <ProgressSpinner />
+    )
+  }
+
+  let allTodos = data.todos.map(todo => (
     <Todo key={todo.id} item={todo} />
   ))
 
@@ -117,20 +133,13 @@ function ProgressSpinner() {
 }
 
 function TodoApp() {
-  const { data, loading, error } = useQuery(FETCH_TODOS)
-
   return (
     <div className="card">
       <div className="card-header">Todo App</div>
       <div className="card-body">
         <CreateTodo />
       </div>
-      {error && (
-        <div className="alert alert-danger" role="alert">
-          An error occurred
-        </div>
-      )}
-      {loading ? <ProgressSpinner /> : <ListTodo todos={data.todos} />}
+      <ListTodo/>
     </div>
   )
 }
