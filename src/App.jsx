@@ -1,75 +1,137 @@
+import { useMutation, useQuery } from "@apollo/client"
+import { useState } from "react"
+import { CREATE_TODO, DELETE_TODO, FETCH_TODOS, TOGGLE_TODO } from "./graphql/queries"
 
 function CreateTodo() {
+  const [todoValue, setTodoValue] = useState("")
+  const [CreateTodo, { data, loading, error }] = useMutation(CREATE_TODO, {
+    refetchQueries: [
+      { query: FETCH_TODOS }, 'getTodos'
+    ]
+  })
+
+  const submitTodo = async () => {
+    if (!todoValue) return
+    const variables = {
+      text: todoValue
+    }
+    await CreateTodo({ variables })
+    setTodoValue('')
+  }
+
   return (
-    <div className="input-group">
-        <input type="text" className="form-control" />
-        <button className="btn btn-primary">Create Todo</button>
-    </div>
+    <>
+      {error && (<div className="alert alert-danger" role="alert">
+        An error occurred. could not create the todo.
+      </div>)
+      }
+      <div className="input-group">
+        <input type="text"
+          className="form-control"
+          placeholder="Enter your todo here..."
+          value={todoValue}
+          onChange={e => setTodoValue(e.target.value)} />
+
+        <button
+          className="btn btn-primary"
+          onClick={submitTodo}
+          disabled={loading} >
+          {loading ? 'Creating...' : 'Create Todo'}
+        </button>
+      </div>
+
+    </>
   )
 }
 
 
-function Todo({item}) {
+function Todo({ item }) {
+  const [DeleteTodo] = useMutation(DELETE_TODO, {
+    refetchQueries: [
+      { query: FETCH_TODOS }, 'getTodos'
+    ]
+  })
+
+  const [UpdateTodo] = useMutation(TOGGLE_TODO, {
+    refetchQueries: [
+      { query: FETCH_TODOS }, 'getTodos'
+    ]
+  })
+
+  const handleDelete = async () => {
+    const confirm = window.confirm("Are you sure you want to delete this item?")
+    if (confirm) {
+      const variables = {
+        id: item.id
+      }
+      await DeleteTodo({ variables })
+    }
+  }
+
+  const handleToggle = async () => {
+    const variables = {
+      id: item.id,
+      done: !item.done
+    }
+    await UpdateTodo({ variables })
+  }
+
+
   return (
-    <li className="list-group-item d-flex justify-content-between align-items-center">
-      {item}
-    <span
-      className="badge bg-danger rounded-pill"
-      style={{ cursor: 'pointer' }}
+    <li className={`list-group-item d-flex justify-content-between align-items-center`}
+      onDoubleClick={handleToggle}
     >
-      X
-    </span>
-  </li>
+      <span className={`${item.done ? "text-decoration-line-through": ""}`}>  {item.text} </span>
+      <span
+        className="badge bg-danger rounded-pill"
+        style={{ cursor: 'pointer' }}
+        onClick={handleDelete}
+      >
+        X
+      </span>
+    </li>
   )
 
 }
 
-function ListTodo({todos}) {
+function ListTodo({ todos }) {
   let allTodos = todos.map(todo => (
-    <Todo  key={todo.id} item={todo.text}/>
+    <Todo key={todo.id} item={todo} />
   ))
 
   return (
     <ul className="list-group list-group-flush">
       {allTodos}
-  </ul>
+    </ul>
   )
 }
 
+function ProgressSpinner() {
+  return (
+    <div className="d-flex justify-content-center align-items-center m-2">
+      <div className="spinner-border text-secondary" role="status">
+        <span className="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  )
+}
 
 function TodoApp() {
-
-  const items = [
-    {
-      id: 1,
-      text: "Item 1",
-      done: true
-    },
-    {
-      id: 2,
-      text: "Item 2",
-      done: true
-    },
-    {
-      id: 3,
-      text: "Item 3",
-      done: true
-    },
-    {
-      id: 4,
-      text: "Item 3",
-      done: true
-    }
-  ]
+  const { data, loading, error } = useQuery(FETCH_TODOS)
 
   return (
-    <div class="card">
-    <div className="card-header">Todo App</div>
-    <div className="card-body">
-      <CreateTodo/>
+    <div className="card">
+      <div className="card-header">Todo App</div>
+      <div className="card-body">
+        <CreateTodo />
+      </div>
+      {error && (
+        <div className="alert alert-danger" role="alert">
+          An error occurred
+        </div>
+      )}
+      {loading ? <ProgressSpinner /> : <ListTodo todos={data.todos} />}
     </div>
-    <ListTodo todos={items}/>
-  </div>
   )
 }
 
@@ -79,7 +141,7 @@ function App() {
     <div className="container">
       <div className="row justify-content-center">
         <div className="col-md-8 mt-5">
-          <TodoApp/>
+          <TodoApp />
         </div>
       </div>
     </div>
