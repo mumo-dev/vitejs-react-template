@@ -1,12 +1,8 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
+import MusicApp from "./music/Music"
 function App() {
-
   return (
-    <div>
+    <div className="container">
+      <MusicApp/>
     </div>
   )
 }
